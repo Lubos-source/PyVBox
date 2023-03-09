@@ -10,3 +10,5 @@ https://pyvbox.readthedocs.io/en/stable/virtualbox/library.html#virtualbox.libra
 Restoring VBox's snapshot:
 https://stackoverflow.com/questions/53852900/restoring-snapshot-in-virtualbox-using-pyvbox
 
+official git:
+https://github.com/sethmlarson/virtualbox-python
