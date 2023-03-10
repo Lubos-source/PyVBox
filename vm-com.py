@@ -1,5 +1,8 @@
 import virtualbox
 import time
+import os
+
+import subprocess
 
 vbox = virtualbox.VirtualBox()
 
@@ -34,6 +37,7 @@ def launchMachine(machine):
 
 def DownMachine():
     """ WORKING """
+    """ Maybe rework to save current state and not just shutdown """
     vbox = virtualbox.VirtualBox()
     machine = vbox.find_machine("Windows10")
     session=machine.create_session()
@@ -44,11 +48,12 @@ def DownMachine():
     session.unlock_machine()
     print(session.state)
 
-def Write():
-    """ working """
+def Write(mach_name):
+    """ Working """
     vbox = virtualbox.VirtualBox()
-    vm = vbox.find_machine('Windows10')
+    vm = vbox.find_machine(mach_name)
     session = vm.create_session()
+    """ try to open notepada first, to see results """
     session.console.keyboard.put_keys("Q: \'You want control?\'\nA: \'Yes, but just a tad...\'\n")
 
 
@@ -97,7 +102,9 @@ def take_snapshot(machine_name,snapshotname,snap_description=""+str(time.time())
     session=machine.create_session()
     process, unused_variable = session.machine.take_snapshot(snapshotname, snap_description, False)
     process.wait_for_completion(timeout=-1)
+    #session.close()
     session.unlock_machine()
+    
 
 def delete_last_snapshot(machine_name):
     """ WORKING """
@@ -135,14 +142,13 @@ def delete_last_snapshot(machine_name):
 
 def keep_just_base_snap(machine_name):
     """ WORKING """
-    """ Delete all snapshots and keeps base one """
+    """ Delete all snapshots and keeps base one(first created snapshot) """
     machine = vbox.find_machine(machine_name)
     base_snapshot=machine.find_snapshot("")
     print(base_snapshot.name)
     snaps=[]
     #snaps=list()
     try:
-
         while True:
             children=base_snapshot.children
             for ch in children:
@@ -152,6 +158,7 @@ def keep_just_base_snap(machine_name):
                 print(child_snap.children_count)
 
             if child_snap.children_count==0:
+                """ end deleting snapshots (no more childrens under base snapshot) """
                 break
             
             base_snapshot=child_snap
@@ -164,31 +171,66 @@ def keep_just_base_snap(machine_name):
             process.wait_for_completion(timeout=-1)
             print("Deleted snapshot :"+snap)
     except:
-        print("No children snapshots.")
+        print("No more children snapshots.")
+    #session.close()
 
-def FileTransf():
-    #future http.serve ? own file transfer server ? folder share ? 
-    #http ----> just comand for virtual machine to download from
-    #powershell : $client.DownloadFile("http://www.xyz.net/file.txt","C:\tmp\file.txt")
-
-    #gs.execute('C:\\Windows\\System32\\cmd.exe', ['/C',˓→'tasklist'])
-
-    return 0
 
 def executecmd(machine_name):
-    vbox = virtualbox.VirtualBox()
-    vm = vbox.find_machine(machine_name)
-    session = vm.create_session()
-    gs = session.console.guest.create_session("win10", "") #authentication ? is it neede if iam loged in ??? 
-    print(session.state)
+    """ WORKING using VBoxManager.exe """
+    vmname = machine_name
+    command_to_run = 'services.msc' # start service (there will be Client app ?)
+    username = "test"
+    password = "test"
+    #command = f'D:\\VirtualBox\\VBoxManage.exe guestcontrol {vmname} run --exe "cmd.exe" --username "{username}" --password "{password}" "{command_to_execute}"'
+    #command = f'"D:\\VirtualBox\\VBoxManage.exe guestcontrol {vmname} run --exe "cmd.exe" --username "{username}" --password "{password}" -- {command_to_run}'
+    command = f'D:\\VirtualBox\\VBoxManage.exe guestcontrol {vmname} run --exe "cmd.exe" --username "{username}" --password "{password}" -- cmd /c "{command_to_run}"'
+    subprocess.Popen(command, shell=True)
+    #subprocess.run(command, shell=True)
+    #Popen  --> dont wait for return from command 
+    #run    --> wait for return from command
+
+def RunApp(machine_name):
+    vmname = machine_name
+    app_name = "notepad.exe"
+    username = "test"
+    password = "test"
+    vboxmanage_path = r"D:\VirtualBox\VBoxManage.exe" # or add VBoxManage.exe to PATH on Computer to execute just alias
+
+    # Check if the application is running
+    command = f'"{vboxmanage_path}" guestcontrol {vmname} run --exe "cmd.exe" --username {username} --password {password} --wait-stdout -- cmd /c "tasklist' # /FI IMAGENAME eq {app_name}"
+    output = subprocess.check_output(command, shell=True)
+    print(output)
+    if app_name not in str(output):
+        print("APP{app_name}is not running....starting")
+        # If the application is not running, start it
+        command = f'"{vboxmanage_path}" guestcontrol {vmname} run --exe "cmd.exe" --username {username} --password {password} -- cmd /c "start {app_name}"'
+        subprocess.Popen(command, shell=True)
+    else:
+        print("APP{app_name}is already running")
     
-    gs.execute("C:\\Windows\\System32\\cmd.exe",[])
-    #process, stdout, stderr = gs.execute('C:\\Windows\\System32\\cmd.exe')
-    #process.wait_for_completion()
-    #print(stdout)
+def CloseAllSessions(machine_name):
+    """ NOT Working """
+    vb = virtualbox.VirtualBox()
+    machine = vb.find_machine(machine_name)
+    for ses in machine.session_state:
+        print(f"Session ID: {ses.id}")
+        print(f"State: {ses.state}")
+        print(f"Type: {ses.type}")
+        print(f"User: {ses.user}")
+        print("------------------")
 
+def testcopy(machine_name,username="test",password="test"):
+    """ WORKING but used with normal cmd command + VBoxManage.exe """
+    """ Maybe set global username password which will be send in startup and remembered ? """
+    vmname = machine_name
+    filename_on_host = "D:\\01programingandtools\\PyVbox\\requirements.txt"
+    directory_on_guest = "C:\\Users\\test\\Documents"
+    username = username
+    password = password
 
+    command = f'D:\\VirtualBox\\VBoxManage.exe guestcontrol {vmname} copyto "{filename_on_host}" --target-directory "{directory_on_guest}" --username "{username}" --password "{password}"'
 
+    subprocess.run(command, shell=True)
 
 
 machines=listmachines()
@@ -200,9 +242,26 @@ machines=listmachines()
 #DownMachine()
 #delete_last_snapshot("Windows10")
 #keep_just_base_snap("Windows10")
-executecmd("Windows10")
+#executecmd("Windows10")
 
-
+#Write("testingPyVbox")
+#launchMachine("testingPyVbox")
+#executecmd("testingPyVbox")
+#testcopy("testingPyVbox")
+#RunApp("testingPyVbox")
+#CloseAllSessions("testingPyVbox")
 #CopyFile()
+take_snapshot("testingPyVbox","Snap_Name_TESTING")
+
 #print(virtualbox.Session().state)
 #print(virtualbox.Session())
+
+"""
+TO DO :
+
+Close All sessions after they are not needed !!! This program keeps it opened with 
+Error Statement yet !! 
+NOT GOOD I guess
+So Close it !
+
+"""

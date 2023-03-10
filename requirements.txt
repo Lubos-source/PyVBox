@@ -5,3 +5,5 @@ virtualbox
 pywin32  \\or\\ pypiwin32
 
 http.serve ??? for file transfer ???
+
+extension Pack instaled on VM for copy files.
