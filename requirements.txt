@@ -3,3 +3,5 @@ pyvbox   ?????
 virtualbox
 
 pywin32  \\or\\ pypiwin32
+
+http.serve ??? for file transfer ???
