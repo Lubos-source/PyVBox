@@ -54,6 +54,7 @@ def Write():
 
 def CopyFile():
     """ NOT WORKING YET """
+    """ Try Shared folder or Whatever to transfer between computers on one network :) """
     # Assume machine is already running.
     vbox = virtualbox.VirtualBox()
     machine = vbox.find_machine("Windows10")
@@ -133,6 +134,8 @@ def delete_last_snapshot(machine_name):
 
 
 def keep_just_base_snap(machine_name):
+    """ WORKING """
+    """ Delete all snapshots and keeps base one """
     machine = vbox.find_machine(machine_name)
     base_snapshot=machine.find_snapshot("")
     print(base_snapshot.name)
@@ -163,7 +166,29 @@ def keep_just_base_snap(machine_name):
     except:
         print("No children snapshots.")
 
-        
+def FileTransf():
+    #future http.serve ? own file transfer server ? folder share ? 
+    #http ----> just comand for virtual machine to download from
+    #powershell : $client.DownloadFile("http://www.xyz.net/file.txt","C:\tmp\file.txt")
+
+    #gs.execute('C:\\Windows\\System32\\cmd.exe', ['/C',˓→'tasklist'])
+
+    return 0
+
+def executecmd(machine_name):
+    vbox = virtualbox.VirtualBox()
+    vm = vbox.find_machine(machine_name)
+    session = vm.create_session()
+    gs = session.console.guest.create_session("win10", "") #authentication ? is it neede if iam loged in ??? 
+    print(session.state)
+    
+    gs.execute("C:\\Windows\\System32\\cmd.exe",[])
+    #process, stdout, stderr = gs.execute('C:\\Windows\\System32\\cmd.exe')
+    #process.wait_for_completion()
+    #print(stdout)
+
+
+
 
 
 machines=listmachines()
@@ -174,10 +199,10 @@ machines=listmachines()
 #take_snapshot("Windows10","Snap_Name_TESTING")
 #DownMachine()
 #delete_last_snapshot("Windows10")
-keep_just_base_snap("Windows10")
-
+#keep_just_base_snap("Windows10")
+executecmd("Windows10")
 
 
 #CopyFile()
-print(virtualbox.Session().state)
+#print(virtualbox.Session().state)
 #print(virtualbox.Session())
