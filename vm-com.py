@@ -98,6 +98,74 @@ def take_snapshot(machine_name,snapshotname,snap_description=""+str(time.time())
     process.wait_for_completion(timeout=-1)
     session.unlock_machine()
 
+def delete_last_snapshot(machine_name):
+    """ WORKING """
+    """ Keeps 2 last snapshots and first 'root snapshot' """
+    machine = vbox.find_machine(machine_name)
+    base_snapshot=machine.find_snapshot("")
+    #print(base_snapshot.name)
+    first_snap=list()
+    last_snap=str()
+    idcount=0
+
+    while True:
+        children=base_snapshot.children
+        for ch in children:
+            child_snap=machine.find_snapshot(ch.id_p)
+            #print(ch.id_p, ch.name)
+        #print(child_snap.children_count)
+        if idcount==0:
+            first_snap=child_snap.id_p, child_snap.name
+            #print(first_snap)
+            idcount+=1
+        last_snap=child_snap.id_p
+        #print("last:"+last_snap)
+        if child_snap.children_count==0:
+            break
+        base_snapshot=child_snap
+
+        if first_snap[0] != last_snap:
+            #first lock session
+            session=machine.create_session()
+            process=session.machine.delete_snapshot(first_snap[0])
+            process.wait_for_completion(timeout=-1)
+            print("Deleted snapshot :"+first_snap[0])
+
+
+def keep_just_base_snap(machine_name):
+    machine = vbox.find_machine(machine_name)
+    base_snapshot=machine.find_snapshot("")
+    print(base_snapshot.name)
+    snaps=[]
+    #snaps=list()
+    try:
+
+        while True:
+            children=base_snapshot.children
+            for ch in children:
+                child_snap=machine.find_snapshot(ch.id_p)
+                snaps.append(child_snap.id_p)
+                print(child_snap.name)
+                print(child_snap.children_count)
+
+            if child_snap.children_count==0:
+                break
+            
+            base_snapshot=child_snap
+
+        print("snaps: "+str(snaps))
+        session=machine.create_session()
+        for snap in snaps:
+            #print(snap)
+            process=session.machine.delete_snapshot(snap)
+            process.wait_for_completion(timeout=-1)
+            print("Deleted snapshot :"+snap)
+    except:
+        print("No children snapshots.")
+
+        
+
+
 machines=listmachines()
 
 #launchMachine("Windows10")
@@ -105,7 +173,8 @@ machines=listmachines()
 #read_snapshot("Windows10","snaptest1")
 #take_snapshot("Windows10","Snap_Name_TESTING")
 #DownMachine()
-
+#delete_last_snapshot("Windows10")
+keep_just_base_snap("Windows10")
 
 
 
